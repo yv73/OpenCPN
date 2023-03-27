@@ -303,7 +303,7 @@ wxString AIS_Target_Data::BuildQueryResult(void) {
   }
 
   if ((Class != AIS_ATON) && (Class != AIS_BASE) && (Class != AIS_GPSG_BUDDY) &&
-      (Class != AIS_SART)) {
+      (Class != AIS_SART) && (Class != AIS_AMRD)) {
     html << trimAISField(CallSign) << _T("</b>") << rowEnd;
 
     if (Class != AIS_CLASS_B) {
@@ -321,6 +321,12 @@ wxString AIS_Target_Data::BuildQueryResult(void) {
 
   if (Class == AIS_ATON) {
     wxString cls(_T("AtoN: "));
+    cls += Get_vessel_type_string(false);
+    ClassStr = wxGetTranslation(cls);
+  }
+
+  if (Class == AIS_AMRD) {
+    wxString cls(_T("AMRD: "));
     cls += Get_vessel_type_string(false);
     ClassStr = wxGetTranslation(cls);
   }
@@ -473,6 +479,13 @@ wxString AIS_Target_Data::BuildQueryResult(void) {
   }
 
   else if (Class == AIS_ATON) {
+    html << _T("<tr><td colspan=2>")
+         << _T("<b>") << navStatStr;
+    html << rowEnd << _T("<tr><td colspan=2>")
+         << _T("<b>") << sizeString << rowEnd;
+  }
+
+  else if (Class == AIS_AMRD) {
     html << _T("<tr><td colspan=2>")
          << _T("<b>") << navStatStr;
     html << rowEnd << _T("<tr><td colspan=2>")
@@ -721,6 +734,10 @@ wxString AIS_Target_Data::GetRolloverString(void) {
       result.Append(wxGetTranslation(Get_class_string(true)));
       result.Append(_T(": "));
       result.Append(wxGetTranslation(Get_vessel_type_string(false)));
+    } else if (Class == AIS_AMRD) {
+      result.Append(wxGetTranslation(Get_class_string(true)));
+      result.Append(_T(": "));
+      result.Append(wxGetTranslation(Get_vessel_type_string(false)));
     } else if (b_SarAircraftPosnReport) {
       int airtype = (MMSI % 1000) / 100;
       result.Append(airtype == 5 ? _("SAR Helicopter") : _("SAR Aircraft"));
@@ -819,6 +836,8 @@ wxString AIS_Target_Data::Get_vessel_type_string(bool b_short) {
   int i = 19;
   if (Class == AIS_ATON) {
     i = ShipType + 20;
+  } else if (Class == AIS_AMRD) {
+    i = ShipType + 57;
   } else
     switch (ShipType) {
       case 30:
@@ -917,6 +936,8 @@ wxString AIS_Target_Data::Get_class_string(bool b_short) {
       return b_short ? _("ARPA") : _("ARPA");
     case AIS_APRS:
       return b_short ? _("APRS") : _("APRS Position Report");
+    case AIS_AMRD:
+      return b_short ? _("AMRD") : _("AMRD");
 
     default:
       return b_short ? _("Unk") : _("Unknown");

@@ -567,6 +567,8 @@ void AIS_Decoder::updateItem(AIS_Target_Data *pTargetData, bool bnewtarget,
         pTargetData->Class = AIS_BASE;
       } else if (aisclass == _T("ATON")) {
         pTargetData->Class = AIS_ATON;
+      } else if (aisclass == _T("AMRD")) {
+        pTargetData->Class = AIS_AMRD;
       }
     } else if (update_path == _T("sensors.ais.fromBow")) {
       if (pTargetData->DimB == 0 && pTargetData->DimA != 0) {
@@ -2284,6 +2286,61 @@ bool AIS_Decoder::Parse_VDXBitstring(AIS_Bitstring *bstr,
         ptd->b_positionDoubtful = true;
 
       b_posn_report = true;
+      break;
+    }
+    case 60:  // AMRD
+    {
+      int part = bstr->GetInt(39, 2);  // part number
+      if (part == 0) { // always 0 for Part A
+        int dest_indicator = bstr->GetInt(41, 1); // Destination indicator
+        int offset = (dest_indicator == 0) ? 0 : 30;
+
+        ptd->ShipType = (unsigned char)bstr->GetInt(103 + offset, 7);
+        ptd->IMO = 0;
+        ptd->SOG = 0;
+        ptd->HDG = 0;
+        ptd->COG = 0;
+        ptd->ROTAIS = -128;  // i.e. not available
+        ptd->DimA = 1;
+        ptd->DimB = 1;
+        ptd->DimC = 1;
+        ptd->DimD = 1;
+        ptd->Draft = 0;
+
+        ptd->m_utc_sec = bstr->GetInt(97 + offset, 6);
+
+        ptd->b_nameValid = false;
+
+        parse_result = true;  // so far so good
+
+        ptd->Class = AIS_AMRD;
+
+        int lon = bstr->GetInt(42 + offset, 28);
+
+        if (lon & 0x08000000)  // negative?
+          lon |= 0xf0000000;
+        double lon_tentative = lon / 600000.;
+
+        int lat = bstr->GetInt(70 + offset, 27);
+
+        if (lat & 0x04000000)  // negative?
+          lat |= 0xf8000000;
+        double lat_tentative = lat / 600000.;
+
+        if ((lon_tentative <= 180.) &&
+            (lat_tentative <=
+             90.))  // Ship does not report Lat or Lon "unavailable"
+        {
+          ptd->Lon = lon_tentative;
+          ptd->Lat = lat_tentative;
+          ptd->b_positionDoubtful = false;
+          ptd->b_positionOnceValid = true;  // Got the position at least once
+          ptd->PositionReportTicks = now.GetTicks();
+        } else
+          ptd->b_positionDoubtful = true;
+
+        b_posn_report = true;
+      }
       break;
     }
     case 8:  // Binary Broadcast

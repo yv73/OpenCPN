@@ -194,7 +194,22 @@ wxString ais_get_type(int index) {
       _("Position Report"),                           // xx        53
       _("Distress"),                                  // xx        54
       _("ARPA radar target"),                         // xx        55
-      _("APRS Position Report")                       // xx        56
+      _("APRS Position Report"),                      // xx        56
+
+      _("Unknown"),                                   // 00        57
+      _("Fishnet marker"),                            // 01        58
+      _("Static position marker"),                    // 02        59
+      _("Dynamic / mobile position marker"),          // 03        60
+      _("Diver tracker"),                             // 04        61
+      _("Rental boat tracker"),                       // 05        62
+      _("Unmanned Autonomous Vehicle"),               // 06        63
+      _("Meteorological-hydrological station"),       // 07        64
+      _("Survey station"),                            // 08        65
+      _("Regatta participant tracker"),               // 09        66
+      _("Barge locator"),                             // 10        67
+      _("Fish pot marker"),                           // 11        68
+      _("Fish area"),                                 // 12        69
+      _("Marker of the terminus of a cable or pipe"), // 13        70
   };
 
   return ais_type[index];
@@ -259,7 +274,22 @@ wxString ais_get_short_type(int index) {
       _("DSC"),           // xx        53
       _("Distress"),      // xx        54
       _("ARPA"),          // xx        55
-      _("APRS")           // xx        56
+      _("APRS"),          // xx        56
+
+      _("AMRD"),          // 00        57
+      _("FISHNET"),       // 01        58
+      _("STATIC_MK"),     // 02        59
+      _("DYNMIC_MK"),     // 03        60
+      _("DIVER"),         // 04        61
+      _("RENTAL"),        // 05        62
+      _("AUTONOMY"),      // 06        63
+      _("HYDRO_STA"),     // 07        64
+      _("SURVEYOR"),      // 08        65
+      _("REGATTA"),       // 09        66
+      _("BARGE"),         // 10        67
+      _("FISH_POT"),      // 11        68
+      _("FISH_AREA"),     // 12        69
+      _("CABLE_END"),     // 13        70
   };
 
   return short_ais_type[index];
@@ -814,6 +844,118 @@ static void SART_Render(ocpnDC &dc, wxPen pen, int x, int y, int radius) {
   dc.DrawLine(x - gap, y + gap, x + gap, y - gap);
 
   dc.SetBrush(brush_save);
+  dc.SetPen(pen_save);
+}
+
+static void AMRD_Render(ocpnDC &dc, int x, int y, int radius,
+                        AIS_Target_Data *td) {
+  //    Constants?
+  wxPen pen_save = dc.GetPen();
+
+  wxPen aton_DrawPen;
+  wxPen aton_WhiteBorderPen;
+  wxBrush aton_Brush;
+
+  int rad1a = radius / 2;  // size off topmarks of AtoN
+  int rad2a = radius / 4;
+  int rad3a =
+      rad1a -
+      1;  // slightly smaller size off topmarks to look better for the eye
+
+  // Set the Pen for what is needed
+  aton_DrawPen = wxPen(GetGlobalColor(_T ( "UBLCK" )), 2);
+
+  aton_WhiteBorderPen =
+      wxPen(GetGlobalColor(_T ( "CHWHT" )), aton_DrawPen.GetWidth() + 2);
+
+  // Draw Base Diamond. First with Thick White pen then custom pen io to get a
+  // white border around the line.
+  wxPoint diamond[5];
+  diamond[0] = wxPoint(radius, 0);
+  diamond[1] = wxPoint(0, -radius);
+  diamond[2] = wxPoint(-radius, 0);
+  diamond[3] = wxPoint(0, radius);
+  diamond[4] = wxPoint(radius, 0);
+  dc.SetPen(aton_WhiteBorderPen);
+  dc.DrawLines(5, diamond, x, y);
+  dc.SetPen(aton_DrawPen);
+  dc.DrawLines(5, diamond, x, y);
+
+  aton_DrawPen = wxPen(GetGlobalColor(_T ( "UBLCK" )),
+                       1);  // Change drawing pen to Solid and width 1
+  aton_WhiteBorderPen =
+      wxPen(GetGlobalColor(_T ( "CHWHT" )), aton_DrawPen.GetWidth() + 2);
+
+  // draw cross inside
+  wxPoint cross[5];
+  cross[0] = wxPoint(-rad2a, 0);
+  cross[1] = wxPoint(rad2a, 0);
+  cross[2] = wxPoint(0, 0);
+  cross[3] = wxPoint(0, rad2a);
+  cross[4] = wxPoint(0, -rad2a);
+  dc.SetPen(aton_WhiteBorderPen);
+  dc.DrawLines(5, cross, x, y);
+  dc.SetPen(aton_DrawPen);
+  dc.DrawLines(5, cross, x, y);
+
+  wxPoint TriPointUp[4];  // Declare triangles here for multiple use
+  TriPointUp[0] = wxPoint(-rad1a, 0);
+  TriPointUp[1] = wxPoint(rad1a, 0);
+  TriPointUp[2] = wxPoint(0, -rad1a);
+  TriPointUp[3] = wxPoint(-rad1a, 0);
+
+  wxPoint TriPointDown[4];  // Declare triangles here for multiple use
+  TriPointDown[0] = wxPoint(-rad1a, -rad1a);
+  TriPointDown[1] = wxPoint(rad1a, -rad1a);
+  TriPointDown[2] = wxPoint(0, 0);
+  TriPointDown[3] = wxPoint(-rad1a, -rad1a);
+
+  wxPoint CircleOpen[16];  // Workaround to draw transparent circles
+  CircleOpen[0] = wxPoint(-1, 5);
+  CircleOpen[1] = wxPoint(1, 5);
+  CircleOpen[2] = wxPoint(3, 4);
+  CircleOpen[3] = wxPoint(4, 3);
+  CircleOpen[4] = wxPoint(5, 1);
+  CircleOpen[5] = wxPoint(5, -1);
+  CircleOpen[6] = wxPoint(4, -3);
+  CircleOpen[7] = wxPoint(3, -4);
+  CircleOpen[8] = wxPoint(1, -5);
+  CircleOpen[9] = wxPoint(-1, -5);
+  CircleOpen[10] = wxPoint(-3, -4);
+  CircleOpen[11] = wxPoint(-4, -3);
+  CircleOpen[12] = wxPoint(-5, -1);
+  CircleOpen[13] = wxPoint(-4, 3);
+  CircleOpen[14] = wxPoint(-3, 4);
+  CircleOpen[15] = wxPoint(-1, 5);
+
+  switch (td->ShipType) {
+    case 0:
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+    case 5:
+    case 6:
+    case 7:
+    case 8:
+    case 9:
+    case 10:
+    case 11:
+    case 12:
+    case 13: {
+      cross[0] = wxPoint(-rad2a, -rad2a);  // reuse of cross array
+      cross[1] = wxPoint(rad2a, rad2a);
+      cross[2] = wxPoint(0, 0);
+      cross[3] = wxPoint(-rad2a, rad2a);
+      cross[4] = wxPoint(rad2a, -rad2a);
+      dc.SetPen(aton_WhiteBorderPen);
+      dc.DrawLines(5, cross, x, y - radius - rad3a);
+      dc.SetPen(aton_DrawPen);
+      dc.DrawLines(5, cross, x, y - radius - rad3a);
+    } break;
+    default:
+      break;
+  }
   dc.SetPen(pen_save);
 }
 
@@ -1509,6 +1651,8 @@ static void AISDrawTarget(AIS_Target_Data *td, ocpnDC &dc, ViewPort &vp,
                     TargetPoint.y);
     }
 
+  } else if (td->Class == AIS_AMRD) {  // AMRD
+    AMRD_Render(dc, TargetPoint.x, TargetPoint.y, 12, td);
   } else {  // ship class A or B or a Buddy or DSC
     wxPen target_pen(UBLCK, 1);
     dc.SetPen(target_pen);

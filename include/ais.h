@@ -127,7 +127,8 @@ typedef enum ais_transponder_class {
   AIS_DSC,         // DSC target
   AIS_SART,        // SART
   AIS_ARPA,        // ARPA radar target
-  AIS_APRS         // APRS position report
+  AIS_APRS,        // APRS position report
+  AIS_AMRD         // AMRD
 } _ais_transponder_class;
 
 //    Describe AIS Alert state
